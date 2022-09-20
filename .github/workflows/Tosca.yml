@@ -48,5 +48,5 @@ jobs:
         with:
           name: Test
           # Coma separated list of paths to test results
-          path: C:\temp\Bernhard.xml
+          path: ./Bernhard.xml
           reporter: java-junit
