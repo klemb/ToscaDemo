@@ -1,1 +1,1 @@
-& "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\ToscaCI\Client\ToscaCIClient.exe" -m distributed -t junit -r C:\temp\CarServiceResult.xml -e http://localhost:90/DistributionServerService/M
+& "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\ToscaCI\Client\ToscaCIClient.exe" -m distributed -t junit -r C:\temp\CarServiceResult.xml -e http://localhost:85/DistributionServerService/M
