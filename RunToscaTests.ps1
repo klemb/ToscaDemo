@@ -1,1 +1,1 @@
-& "C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\ToscaCI\Client\ToscaCIClient.exe" -m distributed -t junit -r C:\temp\CarServiceResult.xml -e http://localhost:85/DistributionServerService/M
+& C:\temp\tosca_execution_client.ps1 -toscaServerUrl "http://localhost:85" -events '["The 16th"]' -projectName "DEX_Workspace" -resultsFolderPath "C:\temp" -resultsFileName  "Bernhard.xml"
