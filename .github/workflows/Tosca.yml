@@ -1,108 +1,54 @@
-# This is a basic workflow to help you get started with Actions
+# This is a basic workflow to help you get started with Actions 
 
 name: CI
 
-# Controls when the workflow will run
+# Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
+  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
 
-resources:
-  repositories:
-  - repository: self
-    type: git
-    ref: main
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
 
-pool:
-  name: Self-hosted Tosca
-
-stages:
-- stage: build
-  jobs:
-    - job: build_app
-      displayName: Build Tricentis Insurance Quoting Application
-#      steps:
-#        - script: echo build application...
-
-- stage: deploy
-  jobs:
-    - job: pre_deploy_app
-      displayName: Pre deploying application to Docker container
-#      steps:
-#        - script: echo set environment...
-    - job: deploy_app
-      displayName: Deploy application to Docker container
-#      steps:
-#        - script: echo depoly to container...
-
-- stage: test
-  jobs:
-    - job: run_tests
-      displayName: Run Tosca test(s)
-      steps:
-#Run Tosca test(s) via AOS API
-      - task: PowerShell@2
-        displayName: Exeute Tosca tests
-        inputs:
-          targetType: 'filePath'
-          filePath: $(System.DefaultWorkingDirectory)\tests\aos-api\tosca_execution_client.ps1
-          arguments: >
-            -toscaServerUrl "$(toscaServerUrl)"
-            -eventsConfigFilePath "$(eventsConfigFilePath)"
-            -projectName "$(projectName)"
-            -creator "$(creator)"
-            -resultsFolderPath "$(Pipeline.Workspace)/TestResults"
-            -executionEnvironment "Dex"
-            -pollingInterval 20
-            -debug "True"
-#Publish Pipeline Artifact
-      - task: PublishPipelineArtifact@1
-        displayName: Publish Pipeline Artifact
-        inputs:
-          targetPath: '$(Pipeline.Workspace)'
-          artifact: 'pipelineArtifacts'
-          publishLocation: 'pipeline'
-
- # Convert results file to UFT8
-      - task: PowerShell@2
-        displayName: Convert results to UFT8
-        inputs:
-          targetType: 'inline'
-          script: |
-            # in case there are multiple result files, sort and take the last one (most recently created)
-            $resultsFileName = (Get-ChildItem -Path "$(Pipeline.Workspace)\TestResults" -Filter '*_results.xml' | sort LastWriteTime | Select-Object -Last 1).name
-            $resFilePath = "$(Pipeline.Workspace)\TestResults\$resultsFileName"
-            $Content = Get-Content $resFilePath -Raw
-            $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
-            [System.IO.File]::WriteAllLines($resFilePath, $Content, $Utf8NoBomEncoding)
-#Publish Test Results
-      - task: PublishTestResults@2
-        displayName: Publish results
-        inputs:
-          testResultsFormat: 'JUnit'
-          testResultsFiles: '$(Pipeline.Workspace)\TestResults\*_results.xml'
-          #testResultsFiles: '**/*_results.xml'
-
-#      - task: DownloadBuildArtifacts@1
-#        inputs:
-#          buildType: 'current'
-#          downloadType: 'specific'
-#          itemPattern: '**/*_results.xml'
-#          downloadPath: '$(System.ArtifactsDirectory)'
-- stage: staging
-  jobs:
-    - job: deploy_app_to_staging
-      displayName: Deploy application to staging
-      steps:
-        - script: echo Deploying to staging environment...
+      # This is on prep for a full E2E demo using the DevOps Tricentis Server
+      - name: Copy Files to Deployment
+        run: Xcopy /e /i /y * C:\Deployment\
+      
+      # Execute Tosca tests, the Powershell script is in the repo
+      - name: Run Tosca Tests
+        run: ./RunToscaTests.ps1
+      # Attach the report to the run
+      - name: Attach the report
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: Results.xml
+          path: C:\temp\Result.xml
+      # Publish Unit Test Results to github
+      - name: Copy output from Tosca tests to local repo
+        run: Xcopy /e /i /y C:\temp\Result.xml C:\actions-runner\_work\Bernhard_Klemm_Demo\Bernhard_Klemm_Demo
+      - name: Send results to qTest
+        run: C:\temp\qTestPulseSubmitResultsGithub.ps1
+      - name: Test Reporter
+        uses: dorny/test-reporter@v1.4.3
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: Test
+          # Coma separated list of paths to test results
+          path: Result.xml
+          reporter: java-junit
