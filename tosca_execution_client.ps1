@@ -391,7 +391,16 @@ function enqueueExecution() {
             -ContentType $contentType                                             `
             -Method Post                                                          `
             -TimeoutSec $requestTimeout                                           `
-
+        if ( $debug -eq $true ) {
+            log "DBG" "Request URL :"
+            log "DBG" "$toscaServerUrl/automationobjectservice/api/execution/enqueue"
+            log "DBG" "Request Body :"
+            log "DBG" "$body"
+            log "DBG" "Request Header :"
+            log "DBG" "$header"
+            log "DBG" "Request Content Type :"
+            log "DBG" "$contentType"
+        }
         $status = $enqueueResponse.StatusCode
         $content = $enqueueResponse.Content
 
